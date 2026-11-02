@@ -1,0 +1,14 @@
+# Debian Live Build output and working state
+build/
+chroot/
+binary/
+cache/
+.build/
+*.iso
+*.img
+
+# Local machine/editor files
+.DS_Store
+Thumbs.db
+.vscode/
+*.swp

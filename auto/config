@@ -1,0 +1,16 @@
+#!/bin/sh
+
+set -e
+
+lb config noauto \
+    --mode debian \
+    --distribution trixie \
+    --architectures amd64 \
+    --binary-image iso-hybrid \
+    --debian-installer false \
+    --archive-areas "main contrib non-free non-free-firmware" \
+    --apt-recommends false \
+    --iso-application "DevOS" \
+    --iso-publisher "DevOS Project" \
+    --iso-volume "DEVOS_AMD64" \
+    "${@}"

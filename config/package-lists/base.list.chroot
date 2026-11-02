@@ -1,0 +1,11 @@
+ca-certificates
+curl
+file
+git
+less
+locales
+man-db
+sudo
+vim-tiny
+wget
+zsh
