@@ -5,6 +5,8 @@ set -e
 lb config noauto \
     --mode debian \
     --distribution trixie \
+    --distribution-chroot trixie \
+    --distribution-binary trixie \
     --architecture amd64 \
     --binary-image iso-hybrid \
     --debian-installer none \
