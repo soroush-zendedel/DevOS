@@ -1,6 +1,10 @@
-# Load Hyper-V storage and optical-media drivers before live-boot scans media.
-hv_vmbus
-hv_storvsc
+# === Live media / filesystems ===
 sr_mod
 isofs
 squashfs
+
+# === Input devices (real hardware + common VMs) ===
+# USB HID
+usbhid
+hid
+hid_generic

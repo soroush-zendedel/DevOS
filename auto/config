@@ -2,17 +2,20 @@
 
 set -e
 
+DEBIAN_MIRROR=${DEVOS_DEBIAN_MIRROR:-http://mirror.iranserver.com/debian/}
+SECURITY_MIRROR=${DEVOS_SECURITY_MIRROR:-http://mirror.iranserver.com/debian-security/}
+
 lb config noauto \
     --mode debian \
     --distribution trixie \
     --distribution-chroot trixie \
     --distribution-binary trixie \
     --architecture amd64 \
-    --mirror-bootstrap "http://mirror.iranserver.com/debian/" \
-    --mirror-chroot "http://mirror.iranserver.com/debian/" \
-    --mirror-binary "http://mirror.iranserver.com/debian/" \
-    --mirror-chroot-security "http://mirror.iranserver.com/debian-security/" \
-    --mirror-binary-security "http://mirror.iranserver.com/debian-security/" \
+    --mirror-bootstrap "$DEBIAN_MIRROR" \
+    --mirror-chroot "$DEBIAN_MIRROR" \
+    --mirror-binary "$DEBIAN_MIRROR" \
+    --mirror-chroot-security "$SECURITY_MIRROR" \
+    --mirror-binary-security "$SECURITY_MIRROR" \
     --binary-image iso-hybrid \
     --debian-installer none \
     --archive-areas "main contrib non-free non-free-firmware" \
