@@ -8,7 +8,7 @@ Use a Debian 13 AMD64 machine with Git and network access to the configured Debi
 
 From the repository root, run `sudo ./scripts/build-iso.sh`. The script invokes Debian Live Build and places the result at `build/devos-amd64.iso`. Generated working files and images are ignored by Git.
 
-`auto/config` is the version-controlled source of build settings. Its options must be supported by the Debian Builder's installed `live-build`; check `lb config --help` before changing them. In particular, this project uses the singular `--architecture` option, sets both `--distribution-chroot` and `--distribution-binary` to `trixie`, and uses `--debian-installer none` to disable the installer. Verify the generated values in `config/bootstrap` and `config/binary` after running `lb config`.
+`auto/config` and the package lists are the version-controlled sources of build settings. The build script regenerates live-build's derived `config/binary`, `config/bootstrap`, `config/chroot`, `config/common`, `config/source`, default package list, and system hook symlinks on each run so stale generated values cannot override the source configuration. The project pins bootstrap, chroot, and binary stages to Trixie and uses the IranServer Debian and security mirrors. Check mirror reachability and `lb config --help` on the Builder before changing these settings. `config/hooks/` contains package-provided symlinks and is ignored; force-add project-owned hooks if needed.
 
 ## Git workflow
 

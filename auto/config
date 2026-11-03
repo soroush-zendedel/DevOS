@@ -8,6 +8,11 @@ lb config noauto \
     --distribution-chroot trixie \
     --distribution-binary trixie \
     --architecture amd64 \
+    --mirror-bootstrap "http://mirror.iranserver.com/debian/" \
+    --mirror-chroot "http://mirror.iranserver.com/debian/" \
+    --mirror-binary "http://mirror.iranserver.com/debian/" \
+    --mirror-chroot-security "http://mirror.iranserver.com/debian-security/" \
+    --mirror-binary-security "http://mirror.iranserver.com/debian-security/" \
     --binary-image iso-hybrid \
     --debian-installer none \
     --archive-areas "main contrib non-free non-free-firmware" \
