@@ -5,6 +5,7 @@ git
 less
 locales
 man-db
+openssh-server
 sudo
 user-setup
 vim-tiny
