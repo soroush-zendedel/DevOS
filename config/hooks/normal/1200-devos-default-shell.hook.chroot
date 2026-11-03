@@ -9,3 +9,6 @@ if grep -Eq '^[[:space:]#]*DSHELL=' "$adduser_config"; then
 else
 	printf '\nDSHELL=/usr/bin/zsh\n' >> "$adduser_config"
 fi
+
+install -d -m 0700 /etc/skel/.ssh
+chmod 0600 /etc/skel/.ssh/authorized_keys
