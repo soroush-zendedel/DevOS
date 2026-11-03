@@ -2,19 +2,24 @@
 
 DevOS is a lightweight, development-focused live Linux image based on Debian 13 (Trixie).
 
-## Current status
+## Project command
 
-Repository scaffolding is in progress. No custom ISO has been built or validated yet.
-
-## Build
-
-On a Debian 13 AMD64 builder with `live-build` installed, run:
+The project provides a `devos` command for repeatable builder and Hyper-V tasks. Install it from the repository checkout:
 
 ```sh
-sudo ./scripts/build-iso.sh
+./scripts/workflows/linux/install-devos-command.sh
 ```
 
-The generated image is written to `build/` and is not tracked by Git. See [docs/development.md](docs/development.md) for setup details and [docs/testing.md](docs/testing.md) for validation steps.
+Then run `devos help`. Common Debian builder commands are:
+
+```sh
+devos build
+devos verify
+devos clean
+devos update-build
+```
+
+On Windows, run `scripts/workflows/windows/Install-DevOSCommand.ps1` once from PowerShell, then use `devos vm-ip`, `devos copy-iso`, and `devos attach-iso`. See [scripts/workflows/README.md](scripts/workflows/README.md) for examples and parameter details. The generated image is written to `build/` and is not tracked by Git. See [docs/development.md](docs/development.md) for setup details and [docs/testing.md](docs/testing.md) for validation steps.
 
 ## Safety
 

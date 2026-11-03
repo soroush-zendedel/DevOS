@@ -1,0 +1,72 @@
+#!/bin/sh
+set -eu
+
+SCRIPT_DIR=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
+ROOT=$(CDPATH= cd -- "$SCRIPT_DIR/.." && pwd)
+COMMAND=${1:-help}
+if [ "$#" -gt 0 ]; then shift; fi
+
+usage() {
+    cat <<'EOF'
+DevOS project command
+
+Usage: devos <command> [options]
+
+Debian builder:
+  build                 Build the ISO, preserving live-build package cache
+  clean [--purge]       Clean generated live-build state; --purge removes caches too
+  verify [ISO]          Check the ISO hash and boot catalog
+  deps                  Install Debian build dependencies
+  update                Fast-forward the current branch from its upstream
+  update-build          Update, build, verify, and show builder IP addresses
+
+Windows PowerShell:
+  vm-ip [parameters]    Find the IP for a running Hyper-V guest
+  copy-iso [parameters] Copy from Debian and verify SHA-256 before accepting it
+  attach-iso [parameters] Attach a verified ISO to an Off Hyper-V VM
+EOF
+}
+
+case "$COMMAND" in
+    help|-h|--help) usage ;;
+    build)
+        [ "$#" -eq 0 ] || { echo "Usage: devos build" >&2; exit 2; }
+        cd "$ROOT"
+        sudo ./scripts/build-iso.sh
+        ;;
+    clean)
+        PURGE=no
+        case "${1:-}" in
+            "") set -- ;;
+            --purge) PURGE=yes; shift ;;
+            *) echo "Usage: devos clean [--purge]" >&2; exit 2 ;;
+        esac
+        [ "$#" -eq 0 ] || { echo "Usage: devos clean [--purge]" >&2; exit 2; }
+        cd "$ROOT"
+        if [ "$PURGE" = yes ]; then sudo lb clean --purge; else sudo lb clean; fi
+        ;;
+    verify)
+        [ "$#" -le 1 ] || { echo "Usage: devos verify [ISO]" >&2; exit 2; }
+        cd "$ROOT"
+        ./scripts/verify-iso.sh "${1:-build/devos-amd64.iso}"
+        ;;
+    deps)
+        [ "$#" -eq 0 ] || { echo "Usage: devos deps" >&2; exit 2; }
+        cd "$ROOT"
+        sudo ./scripts/install-dependencies.sh
+        ;;
+    update)
+        [ "$#" -eq 0 ] || { echo "Usage: devos update" >&2; exit 2; }
+        cd "$ROOT"
+        git pull --ff-only
+        ;;
+    update-build)
+        [ "$#" -eq 0 ] || { echo "Usage: devos update-build" >&2; exit 2; }
+        exec "$SCRIPT_DIR/workflows/linux/update-build-iso.sh"
+        ;;
+    vm-ip|copy-iso|attach-iso)
+        echo "'$COMMAND' is a Windows PowerShell command. Use scripts/devos.ps1 on Windows." >&2
+        exit 2
+        ;;
+    *) echo "Unknown DevOS command: $COMMAND" >&2; usage >&2; exit 2 ;;
+esac
