@@ -3,4 +3,5 @@ openbox
 x11-xserver-utils
 xinit
 xorg
+xserver-xorg-input-libinput
 fonts-dejavu-core

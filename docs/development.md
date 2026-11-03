@@ -10,7 +10,7 @@ From the repository root, run `sudo ./scripts/build-iso.sh`. The script cleans g
 
 `auto/config` and the package lists are the version-controlled sources of build settings. The build script regenerates live-build's derived `config/binary`, `config/bootstrap`, `config/chroot`, `config/common`, `config/source`, default package list, and system hook symlinks on each run so stale generated values cannot override the source configuration. The project pins bootstrap, chroot, and binary stages to Trixie, uses the IranServer Debian and security mirrors first, and retries with the official Debian mirrors if a build fails. Mirror URLs can be overridden with `DEVOS_DEBIAN_MIRROR` and `DEVOS_SECURITY_MIRROR`. Automatic installation of every firmware package is disabled; add required firmware packages explicitly after testing them. Check mirror reachability and `lb config --help` on the Builder before changing these settings. `config/hooks/` contains package-provided symlinks and is ignored; force-add project-owned hooks if needed.
 
-Because APT recommends are disabled to keep the image small, packages required for Live boot and automatic console login must be listed explicitly (including `user-setup`).
+Because APT recommends are disabled to keep the image small, packages required for Live boot, automatic console login, and Xorg input must be listed explicitly (including `user-setup` and `xserver-xorg-input-libinput`).
 
 The live user is created with Zsh as its login shell. The user skeleton starts Xorg only for the automatic login on `tty2`; `startx` runs Openbox, whose autostart opens Kitty fullscreen. SSH sessions and other virtual consoles remain text-only.
 
