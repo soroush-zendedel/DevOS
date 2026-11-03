@@ -1,6 +1,6 @@
 # DevOS command reference
 
-The Python CLI dispatches to these workflow scripts where an OS-specific tool is needed. Run `devos --help` for the full command list.
+The Python CLI dispatches to these workflow scripts where an OS-specific tool is needed. Run `devos --help` for the full command list. ISO build dependencies are installed inside the Debian container, not on the host.
 
 ## Set up the Python environment
 
@@ -34,7 +34,9 @@ devos update-build
 devos deps
 ```
 
-`devos build` builds the current checkout. `devos update-build` fast-forwards from the configured Git upstream first, then builds and verifies. `devos clean` removes generated live-build state while retaining caches; `devos clean --purge` also removes caches. The update-build workflow stops if tracked local edits exist.
+`devos build` builds the current checkout. `devos update-build` fast-forwards from the configured Git upstream first, then builds and verifies. `devos clean` removes generated live-build state while retaining caches; `devos clean --purge` removes the persistent builder volume and its caches. The ISO in the host `build/` directory remains. `devos deps` rebuilds the Debian builder image and refreshes its operating-system packages. `devos update-build` stops if tracked local edits exist.
+
+Docker keeps the Linux build workspace and caches in a persistent named volume. The ISO is copied to the repository's `build/` directory and its hash is checked after copying. The build service uses a privileged Linux container because live-build needs to mount and prepare chroots; review this Compose setting before using an unfamiliar checkout. On Docker Desktop, the named volume lives in Docker's Linux VM storage.
 
 ## Find the Hyper-V guest address (Windows PowerShell)
 

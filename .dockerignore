@@ -1,0 +1,4 @@
+**
+!Dockerfile
+!docker/
+!docker/container-entrypoint.sh

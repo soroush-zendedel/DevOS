@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-import os
+import hashlib
 import shutil
 import subprocess
 import sys
@@ -22,11 +22,6 @@ app = typer.Typer(
 )
 
 
-def require_linux() -> None:
-    if sys.platform != "linux":
-        raise typer.BadParameter("This command runs on the Debian builder (Linux).")
-
-
 def require_windows() -> None:
     if sys.platform != "win32":
         raise typer.BadParameter("This command runs on the Windows Hyper-V host.")
@@ -41,16 +36,74 @@ def run(command: list[str], *, cwd: Path = APP_ROOT) -> None:
         raise typer.Exit(result.returncode)
 
 
-def run_builder_script(script: str, *args: str) -> None:
-    require_linux()
-    path = APP_ROOT / "scripts" / script
-    command = [str(path), *args]
-    if os.geteuid() != 0:
-        sudo = shutil.which("sudo")
-        if not sudo:
-            raise typer.BadParameter("sudo is required; install it or run this command as root.")
-        command.insert(0, sudo)
-    run(command)
+def compose_base() -> list[str]:
+    docker = shutil.which("docker")
+    if not docker:
+        raise typer.BadParameter("Docker is required. Install Docker Desktop or Docker Engine with the Compose plugin.")
+    command = [docker, "compose", "--project-directory", str(APP_ROOT)]
+    try:
+        daemon = subprocess.run(
+            [docker, "info", "--format", "{{.ServerVersion}}"],
+            cwd=APP_ROOT,
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+    except OSError as exc:
+        raise typer.BadParameter(f"Could not start Docker: {exc}") from exc
+    if daemon.returncode:
+        detail = daemon.stderr.strip() or "Docker Engine did not respond."
+        raise typer.BadParameter(f"Docker Engine is unavailable. Start Docker Desktop/Engine and retry. {detail}")
+    compose_version = subprocess.run(
+        [docker, "compose", "version"], cwd=APP_ROOT, capture_output=True, text=True, check=False
+    )
+    if compose_version.returncode:
+        raise typer.BadParameter("Docker Compose v2 is required. Install/enable the Compose plugin and retry.")
+    run(command + ["config", "--quiet"])
+    return command
+
+
+def run_compose(*args: str) -> None:
+    command = compose_base()
+    run(command + list(args))
+
+
+def copied_iso_hash(*, require_checksum_file: bool = True) -> str:
+    iso = APP_ROOT / "build" / "devos-amd64.iso"
+    checksum_file = APP_ROOT / "build" / "devos-amd64.iso.sha256"
+    if not iso.is_file():
+        raise typer.BadParameter(f"ISO does not exist: {iso}")
+    expected = None
+    if checksum_file.is_file():
+        try:
+            expected = checksum_file.read_text(encoding="ascii").split()[0].upper()
+        except (OSError, IndexError, UnicodeError) as exc:
+            raise typer.BadParameter(f"Could not read the container's ISO checksum: {exc}") from exc
+    elif require_checksum_file:
+        raise typer.BadParameter("The container did not create build/devos-amd64.iso.sha256.")
+    digest = hashlib.sha256()
+    with iso.open("rb") as stream:
+        for block in iter(lambda: stream.read(1024 * 1024), b""):
+            digest.update(block)
+    actual = digest.hexdigest().upper()
+    if expected is not None and actual != expected:
+        raise typer.BadParameter(f"ISO copy hash mismatch: container={expected}, host={actual}")
+    label = "ISO copy verified" if expected is not None else "ISO SHA-256"
+    console.print(f"{label}: {iso} [dim]{actual}[/dim]")
+    return actual
+
+
+def container_build() -> None:
+    run_compose("run", "--build", "--rm", "builder", "./scripts/build-iso.sh")
+    copied_iso_hash()
+
+
+def container_verify() -> None:
+    copied_iso_hash(require_checksum_file=False)
+    run_compose(
+        "run", "--build", "--rm", "builder",
+        "./scripts/verify-iso.sh", "/workspace/build/devos-amd64.iso",
+    )
 
 
 def run_powershell_script(script: str, *args: str) -> None:
@@ -64,10 +117,9 @@ def run_powershell_script(script: str, *args: str) -> None:
 
 @app.command()
 def build() -> None:
-    """Build the ISO from the current checkout, keeping downloaded caches."""
-    require_linux()
-    console.rule("Building DevOS ISO")
-    run_builder_script("build-iso.sh")
+    """Build the ISO in the Debian container, keeping downloaded caches."""
+    console.rule("Building DevOS ISO with Docker Compose")
+    container_build()
 
 
 @app.command()
@@ -77,36 +129,24 @@ def clean(
         typer.Option(help="Also remove downloaded package and bootstrap caches."),
     ] = False,
 ) -> None:
-    """Clean live-build output; preserve caches unless --purge is supplied."""
-    require_linux()
+    """Clean containerized live-build output; preserve caches unless --purge is supplied."""
     command = ["lb", "clean", "--purge"] if purge else ["lb", "clean"]
     console.rule("Cleaning live-build state")
-    if os.geteuid() != 0:
-        sudo = shutil.which("sudo")
-        if not sudo:
-            raise typer.BadParameter("sudo is required; install it or run this command as root.")
-        command.insert(0, sudo)
-    run(command)
+    run_compose("run", "--build", "--rm", "builder", *command)
+    if purge:
+        run_compose("down", "--volumes")
 
 
 @app.command()
-def verify(
-    iso: Annotated[
-        Path,
-        typer.Argument(help="ISO file to inspect."),
-    ] = APP_ROOT / "build" / "devos-amd64.iso",
-) -> None:
-    """Print the ISO SHA-256 and inspect its boot catalog when xorriso is installed."""
-    require_linux()
-    iso_path = iso if iso.is_absolute() else Path.cwd() / iso
-    run([str(APP_ROOT / "scripts" / "verify-iso.sh"), str(iso_path)])
+def verify() -> None:
+    """Print the ISO SHA-256 and inspect its boot catalog in the Debian container."""
+    container_verify()
 
 
 @app.command()
 def deps() -> None:
-    """Install Debian packages needed by the image builder."""
-    require_linux()
-    run_builder_script("install-dependencies.sh")
+    """Build the Debian builder image and refresh its required packages."""
+    run_compose("build", "--pull", "--no-cache", "builder")
 
 
 @app.command()
@@ -117,10 +157,24 @@ def update() -> None:
 
 @app.command("update-build")
 def update_build() -> None:
-    """Update from Git, build, verify the ISO, and print builder IPs."""
-    require_linux()
-    script = APP_ROOT / "scripts" / "workflows" / "linux" / "update-build-iso.sh"
-    run([str(script)])
+    """Fast-forward from Git, build the ISO in Docker, and verify it."""
+    result = subprocess.run(
+        ["git", "status", "--porcelain", "--untracked-files=no"],
+        cwd=APP_ROOT,
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    if result.returncode:
+        raise typer.BadParameter(result.stderr.strip() or "Could not inspect the Git working tree.")
+    if result.stdout.strip():
+        raise typer.BadParameter("Tracked local changes exist. Commit or stash them before update-build.")
+    run(["git", "pull", "--ff-only"])
+    console.print("Building repository revision:", end=" ")
+    run(["git", "log", "-1", "--format=%h %s"])
+    container_build()
+    container_verify()
+    console.print("DevOS build and ISO verification completed.")
 
 
 @app.command("vm-ip")

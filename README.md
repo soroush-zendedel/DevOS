@@ -20,7 +20,7 @@ python -m venv .venv
 python -m pip install --editable .
 ```
 
-The `devos` command is then available while that virtual environment is active. See `devos --help` for the full command list.
+The `devos` command is then available while that virtual environment is active. Docker Desktop or Docker Engine with the Compose v2 plugin must also be installed and running. The ISO builder and its Debian dependencies run in a Linux container, so they are not installed on the host. See `devos --help` for the full command list.
 
 Common Debian builder commands:
 
@@ -31,7 +31,11 @@ devos clean
 devos update-build
 ```
 
-On Windows, activate the same virtual environment and use `devos vm-ip`, `devos copy-iso`, and `devos attach-iso`. See [scripts/workflows/README.md](scripts/workflows/README.md) for examples and parameter details. The generated image is written to `build/` and is not tracked by Git. See [docs/development.md](docs/development.md) for setup details and [docs/testing.md](docs/testing.md) for validation steps.
+On Windows, activate the same virtual environment and use `devos build`, `devos verify`, and `devos clean` through Docker Compose, as well as `devos vm-ip`, `devos copy-iso`, and `devos attach-iso` for Hyper-V. The generated ISO is written to `build/` and is not tracked by Git. See [scripts/workflows/README.md](scripts/workflows/README.md) for examples and [docs/development.md](docs/development.md) for build details.
+
+## Planned work
+
+- Add a later hardware-aware build option that detects the target computer's hardware and includes matching drivers plus universal drivers. This is a future phase; the current build does not inspect hardware.
 
 ## Safety
 

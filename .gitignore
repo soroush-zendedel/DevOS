@@ -1,5 +1,8 @@
 # Debian Live Build output and working state
 .venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
 build/
 chroot/
 binary/

@@ -1,0 +1,40 @@
+services:
+  builder:
+    image: devos-builder:trixie
+    platform: linux/amd64
+    build:
+      context: .
+      dockerfile: Dockerfile
+    privileged: true
+    working_dir: /workspace
+    environment:
+      DEVOS_DEBIAN_MIRROR: ${DEVOS_DEBIAN_MIRROR:-http://mirror.iranserver.com/debian/}
+      DEVOS_SECURITY_MIRROR: ${DEVOS_SECURITY_MIRROR:-http://mirror.iranserver.com/debian-security/}
+    volumes:
+      - type: bind
+        source: ./assets
+        target: /source/assets
+        read_only: true
+      - type: bind
+        source: ./auto
+        target: /source/auto
+        read_only: true
+      - type: bind
+        source: ./config
+        target: /source/config
+        read_only: true
+      - type: bind
+        source: ./scripts
+        target: /source/scripts
+        read_only: true
+      - type: volume
+        source: devos-workspace
+        target: /workspace
+      - type: bind
+        source: ./build
+        target: /host-output
+        bind:
+          create_host_path: true
+
+volumes:
+  devos-workspace:
