@@ -1,0 +1,20 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "devos-cli"
+version = "0.1.0"
+description = "Cross-platform command line tools for building and testing DevOS"
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = [
+    "typer>=0.12,<1",
+    "rich>=13.7,<15",
+]
+
+[project.scripts]
+devos = "devos.cli:app"
+
+[tool.setuptools.packages.find]
+where = ["src"]

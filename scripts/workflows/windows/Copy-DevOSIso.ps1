@@ -1,8 +1,8 @@
 [CmdletBinding()]
 param(
     [Parameter(Mandatory)] [string] $BuilderHost,
-    [Parameter()] [string] $BuilderUser = 'soroush',
-    [Parameter()] [string] $RemoteIsoPath = '/home/soroush/devos/build/devos-amd64.iso',
+    [Parameter(Mandatory)] [string] $BuilderUser,
+    [Parameter(Mandatory)] [string] $RemoteIsoPath,
     [Parameter(Mandatory)] [string] $DestinationDirectory,
     [Parameter()] [string] $IdentityFile
 )

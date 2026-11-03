@@ -2,15 +2,27 @@
 
 DevOS is a lightweight, development-focused live Linux image based on Debian 13 (Trixie).
 
-## Project command
+## Install the project command
 
-The project provides a `devos` command for repeatable builder and Hyper-V tasks. Install it from the repository checkout:
+Install the CLI and its dependencies in a project-local Python virtual environment. Run these commands from the repository root.
 
 ```sh
-./scripts/workflows/linux/install-devos-command.sh
+python -m venv .venv
+source .venv/bin/activate
+python -m pip install --editable .
 ```
 
-Then run `devos help`. Common Debian builder commands are:
+On Windows PowerShell, use:
+
+```powershell
+python -m venv .venv
+.venv\Scripts\Activate.ps1
+python -m pip install --editable .
+```
+
+The `devos` command is then available while that virtual environment is active. See `devos --help` for the full command list.
+
+Common Debian builder commands:
 
 ```sh
 devos build
@@ -19,7 +31,7 @@ devos clean
 devos update-build
 ```
 
-On Windows, run `scripts/workflows/windows/Install-DevOSCommand.ps1` once from PowerShell, then use `devos vm-ip`, `devos copy-iso`, and `devos attach-iso`. See [scripts/workflows/README.md](scripts/workflows/README.md) for examples and parameter details. The generated image is written to `build/` and is not tracked by Git. See [docs/development.md](docs/development.md) for setup details and [docs/testing.md](docs/testing.md) for validation steps.
+On Windows, activate the same virtual environment and use `devos vm-ip`, `devos copy-iso`, and `devos attach-iso`. See [scripts/workflows/README.md](scripts/workflows/README.md) for examples and parameter details. The generated image is written to `build/` and is not tracked by Git. See [docs/development.md](docs/development.md) for setup details and [docs/testing.md](docs/testing.md) for validation steps.
 
 ## Safety
 
