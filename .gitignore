@@ -18,6 +18,15 @@ config/source
 config/package-lists/live.list.chroot
 config/hooks/
 
+# Generated live-build manifests and package reports.
+binary.modified_timestamps
+chroot.files
+chroot.packages.install
+chroot.packages.live
+live-image-amd64.contents
+live-image-amd64.files
+live-image-amd64.packages
+
 # Local machine/editor files
 .DS_Store
 Thumbs.db
