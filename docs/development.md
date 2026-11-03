@@ -14,6 +14,8 @@ Because APT recommends are disabled to keep the image small, packages required f
 
 The live image includes and starts `openssh-server` by default. For safety, it does not bake in a shared SSH password or private key. On each fresh Live boot, set a temporary password for the auto-logged-in `user` account from the VM console with `sudo passwd user`; then connect with `ssh user@<live-system-ip>`. The password and any other changes in the Live session are lost when the VM shuts down.
 
+The initramfs explicitly loads the Hyper-V storage bus, virtual storage, optical-drive, ISO9660, and SquashFS modules before `live-boot` scans for the Live medium. This targets the Generation 2 failure seen in Hyper-V; verify both Generation 1 and Generation 2 boot from the resulting ISO before treating the fix as confirmed. The `findiso=${iso_path}` argument in generated GRUB configuration is emitted by Debian `live-build` for loopback boot support and is left unchanged.
+
 ## Git workflow
 
 Keep `main` synchronized with `origin/main` before starting work. Make changes in a focused commit, review `git diff --check` and `git status`, then push the commit to GitHub. Treat generated build output as disposable and never commit ISO images, credentials, private keys, or machine-specific state.

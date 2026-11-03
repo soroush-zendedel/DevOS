@@ -1,0 +1,6 @@
+# Load Hyper-V storage and optical-media drivers before live-boot scans media.
+hv_vmbus
+hv_storvsc
+sr_mod
+isofs
+squashfs
