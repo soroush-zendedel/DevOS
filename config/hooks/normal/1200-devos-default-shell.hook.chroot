@@ -1,0 +1,11 @@
+#!/bin/sh
+
+set -eu
+
+adduser_config=/etc/adduser.conf
+
+if grep -Eq '^[[:space:]#]*DSHELL=' "$adduser_config"; then
+	sed -i -E 's|^[[:space:]#]*DSHELL=.*$|DSHELL=/usr/bin/zsh|' "$adduser_config"
+else
+	printf '\nDSHELL=/usr/bin/zsh\n' >> "$adduser_config"
+fi
