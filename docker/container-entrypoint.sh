@@ -44,8 +44,13 @@ cd /workspace
 case "${1:-}" in
     ./scripts/build-iso.sh|scripts/build-iso.sh)
         "$@"
-        if ! grep -qx 'xserver-xorg-input-libinput' /workspace/live-image-amd64.packages; then
-            echo "Required package xserver-xorg-input-libinput is missing from the image." >&2
+        package_manifest=/workspace/live-image-amd64.packages
+        if [ ! -f "$package_manifest" ]; then
+            echo "Live Build did not create the expected package manifest: $package_manifest" >&2
+            exit 1
+        fi
+        if ! grep -Eq '(^|[[:space:]])xserver-xorg-input-libinput(:[^[:space:]]+)?([[:space:]]|$)' "$package_manifest"; then
+            echo "Required package xserver-xorg-input-libinput is missing from $package_manifest." >&2
             exit 1
         fi
         iso=/workspace/build/devos-amd64.iso
