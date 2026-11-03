@@ -3,7 +3,7 @@ set -euo pipefail
 
 # Resolve the repository from this script so callers can run it from anywhere.
 SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
-REPO_ROOT="$(cd -- "$SCRIPT_DIR/../.." && pwd)"
+REPO_ROOT="$(cd -- "$SCRIPT_DIR/../../.." && pwd)"
 cd "$REPO_ROOT"
 
 if [[ -n "$(git status --porcelain --untracked-files=no)" ]]; then
