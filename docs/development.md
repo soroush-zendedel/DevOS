@@ -10,6 +10,8 @@ From the repository root, run `sudo ./scripts/build-iso.sh`. The script invokes 
 
 `auto/config` and the package lists are the version-controlled sources of build settings. The build script regenerates live-build's derived `config/binary`, `config/bootstrap`, `config/chroot`, `config/common`, `config/source`, default package list, and system hook symlinks on each run so stale generated values cannot override the source configuration. The project pins bootstrap, chroot, and binary stages to Trixie, uses the IranServer Debian and security mirrors, and disables automatic installation of every firmware package. Add required firmware packages explicitly after testing them. Check mirror reachability and `lb config --help` on the Builder before changing these settings. `config/hooks/` contains package-provided symlinks and is ignored; force-add project-owned hooks if needed.
 
+Because APT recommends are disabled to keep the image small, packages required for Live boot and automatic console login must be listed explicitly (including `user-setup`).
+
 ## Git workflow
 
 Keep `main` synchronized with `origin/main` before starting work. Make changes in a focused commit, review `git diff --check` and `git status`, then push the commit to GitHub. Treat generated build output as disposable and never commit ISO images, credentials, private keys, or machine-specific state.

@@ -6,6 +6,7 @@ less
 locales
 man-db
 sudo
+user-setup
 vim-tiny
 wget
 zsh
