@@ -6,6 +6,7 @@ less
 locales
 man-db
 openssh-server
+openssh-client
 sudo
 user-setup
 vim-tiny

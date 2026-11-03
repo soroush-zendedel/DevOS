@@ -5,9 +5,15 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
+      args:
+        DEVOS_MIRROR_COUNTRY: ${DEVOS_MIRROR_COUNTRY:-iran}
+        DEVOS_DEBIAN_MIRRORS: ${DEVOS_DEBIAN_MIRRORS:-http://mirror.iranserver.com/debian/|http://mirror.iranserver.com/debian-security/,http://mirror.arvancloud.ir/debian/|http://mirror.arvancloud.ir/debian-security/,http://mirror.famaserver.com/debian/|http://mirror.iranserver.com/debian-security/,http://deb.debian.org/debian/|http://security.debian.org/debian-security/}
     privileged: true
     working_dir: /workspace
     environment:
+      DEVOS_MIRROR_COUNTRY: ${DEVOS_MIRROR_COUNTRY:-iran}
+      DEVOS_PYPI_MIRRORS: ${DEVOS_PYPI_MIRRORS:-https://mirror.novin.cloud/artifactory/api/pypi/pypi/simple/,https://mirror2.chabokan.net/pypi/simple/,https://pypi.hyperclouds.ir/simple/}
+      DEVOS_DEBIAN_MIRRORS: ${DEVOS_DEBIAN_MIRRORS:-http://mirror.iranserver.com/debian/|http://mirror.iranserver.com/debian-security/,http://mirror.arvancloud.ir/debian/|http://mirror.arvancloud.ir/debian-security/,http://mirror.famaserver.com/debian/|http://mirror.iranserver.com/debian-security/,http://deb.debian.org/debian/|http://security.debian.org/debian-security/}
       DEVOS_DEBIAN_MIRROR: ${DEVOS_DEBIAN_MIRROR:-http://mirror.iranserver.com/debian/}
       DEVOS_SECURITY_MIRROR: ${DEVOS_SECURITY_MIRROR:-http://mirror.iranserver.com/debian-security/}
     volumes:
@@ -27,12 +33,16 @@ services:
         source: ./scripts
         target: /source/scripts
         read_only: true
+      - type: bind
+        source: ./.devos-ssh.pub
+        target: /source/ssh/devos-ssh.pub
+        read_only: true
       - type: volume
         source: devos-workspace
         target: /workspace
       - type: bind
         source: ./build
-        target: /host-output
+        target: /workspace/build
         bind:
           create_host_path: true
 

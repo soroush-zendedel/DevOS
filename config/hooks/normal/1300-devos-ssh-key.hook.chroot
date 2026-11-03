@@ -1,0 +1,23 @@
+#!/bin/sh
+set -eu
+
+key_file=/etc/ssh/devos-ssh.pub
+authorized_keys=/etc/skel/.ssh/authorized_keys
+
+if [ ! -s "$key_file" ]; then
+    echo "Project SSH public key is missing from the Live image." >&2
+    exit 1
+fi
+
+install -d -m 0700 /etc/skel/.ssh
+install -m 0600 "$key_file" "$authorized_keys"
+rm -f "$key_file"
+
+cat > /etc/ssh/sshd_config.d/10-devos-key-only.conf <<'EOF'
+PubkeyAuthentication yes
+PasswordAuthentication no
+KbdInteractiveAuthentication no
+PermitRootLogin no
+EOF
+
+systemctl enable ssh

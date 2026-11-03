@@ -1,7 +1,8 @@
 [CmdletBinding()]
 param(
     [Parameter()]
-    [string] $VMName
+    [string] $VMName,
+    [switch] $Quiet
 )
 
 $ErrorActionPreference = 'Stop'
@@ -46,4 +47,5 @@ $results = foreach ($vm in $vms) {
 }
 
 if (-not $results) { throw 'No guest IPv4 address found. Confirm the VM is running and has network connectivity.' }
-$results | Format-Table -AutoSize
+if ($Quiet) { $results | Select-Object -First 1 | ConvertTo-Json -Compress }
+else { $results | Format-Table -AutoSize }

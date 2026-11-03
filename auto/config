@@ -20,6 +20,7 @@ lb config noauto \
     --debian-installer none \
     --archive-areas "main contrib non-free non-free-firmware" \
     --apt-recommends false \
+    --cache-indices true \
     --firmware-chroot false \
     --iso-application "DevOS" \
     --iso-publisher "DevOS Project" \

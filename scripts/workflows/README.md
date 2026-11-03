@@ -9,7 +9,7 @@ Run from the repository root:
 ```sh
 python -m venv .venv
 source .venv/bin/activate
-python -m pip install --editable .
+python scripts/pip-mirror.py install --editable .
 ```
 
 On Windows PowerShell, use:
@@ -17,7 +17,7 @@ On Windows PowerShell, use:
 ```powershell
 python -m venv .venv
 .venv\Scripts\Activate.ps1
-python -m pip install --editable .
+python scripts/pip-mirror.py install --editable .
 ```
 
 The `devos` command is available while the virtual environment is active; no shell profile changes are made.
@@ -31,10 +31,10 @@ devos clean
 devos clean --purge
 devos update
 devos update-build
-devos deps
+devos build --up
 ```
 
-`devos build` builds the current checkout. `devos update-build` fast-forwards from the configured Git upstream first, then builds and verifies. `devos clean` removes generated live-build state while retaining caches; `devos clean --purge` removes the persistent builder volume and its caches. The ISO in the host `build/` directory remains. `devos deps` rebuilds the Debian builder image and refreshes its operating-system packages. `devos update-build` stops if tracked local edits exist.
+`devos build` builds the current checkout and builds the Docker image if needed. `devos build --up` first refreshes the builder image from the base image without cache, then builds the ISO. `devos update-build` fast-forwards from the configured Git upstream first, then builds and verifies. `devos clean` removes generated live-build state while retaining caches; `devos clean --purge` removes the persistent builder volume and its caches. The ISO in the host `build/` directory remains. `devos deps` remains available to refresh the builder image without building an ISO. `devos update-build` stops if tracked local edits exist.
 
 Docker keeps the Linux build workspace and caches in a persistent named volume. The ISO is copied to the repository's `build/` directory and its hash is checked after copying. The build service uses a privileged Linux container because live-build needs to mount and prepare chroots; review this Compose setting before using an unfamiliar checkout. On Docker Desktop, the named volume lives in Docker's Linux VM storage.
 
@@ -45,6 +45,10 @@ If exactly one VM is running, `devos vm-ip` selects it automatically. With multi
 ```powershell
 devos vm-ip --vm-name ExampleVM
 ```
+
+## Connect to a DevOS Live VM
+
+The first `devos build` creates a project-specific SSH key. Only the public half enters the ISO. With one running Hyper-V VM, connect with `devos ssh`; choose a VM with `devos ssh --vm-name ExampleVM`. The command discovers its IPv4 address and connects as `user` without setting or prompting for a password. The first connection displays a host fingerprint for confirmation; later connections reject a changed key. `devos logs` shows recent builder output, and `devos logs --lines 500` shows a longer tail.
 
 ## Copy and verify the ISO
 

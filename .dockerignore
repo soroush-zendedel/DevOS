@@ -2,3 +2,13 @@
 !Dockerfile
 !docker/
 !docker/container-entrypoint.sh
+!docker/install-builder-packages.sh
+!config/
+config/*
+!config/includes.chroot/
+config/includes.chroot/*
+!config/includes.chroot/etc/
+config/includes.chroot/etc/*
+!config/includes.chroot/etc/pip.conf
+!config/mirrors/
+!config/mirrors/**

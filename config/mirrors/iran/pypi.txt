@@ -1,0 +1,4 @@
+# Tried in order before the official PyPI fallback.
+https://mirror.novin.cloud/artifactory/api/pypi/pypi/simple/
+https://mirror2.chabokan.net/pypi/simple/
+https://pypi.hyperclouds.ir/simple/

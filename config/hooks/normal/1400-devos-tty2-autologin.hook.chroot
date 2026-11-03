@@ -1,0 +1,5 @@
+#!/bin/sh
+set -eu
+
+# Keep tty2 available as the graphical console and log the Live user in there.
+systemctl enable getty@tty2.service

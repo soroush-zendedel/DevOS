@@ -1,0 +1,5 @@
+# Format: Debian archive URL|Debian security URL. Tried in order.
+http://mirror.arvancloud.ir/debian/|http://mirror.arvancloud.ir/debian-security/
+http://mirror.iranserver.com/debian/|http://mirror.iranserver.com/debian-security/
+http://mirror.famaserver.com/debian/|http://mirror.iranserver.com/debian-security/
+http://deb.debian.org/debian/|http://security.debian.org/debian-security/

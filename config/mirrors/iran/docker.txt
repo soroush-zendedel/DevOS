@@ -1,0 +1,4 @@
+# Docker Hub references, tried in order. Official Docker Hub is the final fallback.
+docker.arvancloud.ir/library/debian:trixie-slim
+docker.novin.cloud/library/debian:trixie-slim
+debian:trixie-slim
