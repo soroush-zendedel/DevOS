@@ -43,7 +43,7 @@ Docker keeps the Linux build workspace and caches in a persistent named volume. 
 If exactly one VM is running, `devos vm-ip` selects it automatically. With multiple running VMs, specify the intended guest:
 
 ```powershell
-devos vm-ip --vm-name DevOS-Live-Test
+devos vm-ip --vm-name ExampleVM
 ```
 
 ## Copy and verify the ISO
@@ -67,7 +67,7 @@ The VM must already be **Off**. The command checks its state before changing the
 
 ```powershell
 devos attach-iso `
-  --vm-name DevOS-Live-Test `
+  --vm-name ExampleVM `
   --iso-path H:\DevOS\isos\devos-amd64-0123456789ab.iso
 ```
 

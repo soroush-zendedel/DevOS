@@ -16,7 +16,7 @@ Because APT recommends are disabled to keep the image small, packages required f
 
 The live user is created with Zsh as its login shell. The user skeleton starts Xorg only for the automatic login on `tty2`; `startx` runs Openbox, whose autostart opens Kitty fullscreen. SSH sessions and other virtual consoles remain text-only.
 
-The live image includes and starts `openssh-server` by default. It embeds the project's dedicated public key for the `user` account; the matching private key stays outside Git and the ISO. Connect with `ssh -i <private-key> user@<live-system-ip>`. The key is intended for this isolated Live test image; remove it before distributing an ISO publicly.
+The live image includes `openssh-server`, but contains no project-specific SSH key or shared password. For a temporary SSH session, set a password for the auto-login `user` from the Live console with `sudo passwd user`, then connect with `ssh user@<live-system-ip>`. The Live session is temporary, so set a new password after reboot. Do not commit personal keys or passwords; the Windows `devos copy-iso` command accepts an optional identity file at run time.
 
 The initramfs explicitly loads the Hyper-V storage bus, virtual storage, optical-drive, ISO9660, and SquashFS modules before `live-boot` scans for the Live medium. This targets the Generation 2 failure seen in Hyper-V; verify both Generation 1 and Generation 2 boot from the resulting ISO before treating the fix as confirmed. The `findiso=${iso_path}` argument in generated GRUB configuration is emitted by Debian `live-build` for loopback boot support and is left unchanged.
 
