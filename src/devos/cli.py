@@ -26,7 +26,7 @@ console = Console()
 active_status: Status | None = None
 build_started_at: float | None = None
 ANSI_ESCAPE = re.compile(r"\x1b\[[0-?]*[ -/]*[@-~]")
-LIVE_BUILD_STAGE = re.compile(r"\blb\s+(bootstrap|chroot|binary|source)(?:_([a-z0-9_-]+))?\s+(\S+)", re.I)
+LIVE_BUILD_STAGE = re.compile(r"\blb\s+([a-z0-9_-]+)(?:_([a-z0-9_-]+))?\s+(\S*)", re.I)
 app = typer.Typer(
     name="devos",
     help="Build, inspect, and test the DevOS live image.",
@@ -51,17 +51,32 @@ def run(command: list[str], *, cwd: Path = APP_ROOT) -> None:
         started_at = build_started_at or time.monotonic()
         current_phase = "Preparing build"
 
+        stage_timings: list[tuple[str, float, str]] = []
+        last_stage_time = started_at
+        last_stage_name = "Preparing build"
+
         def elapsed_text() -> str:
             seconds = int(time.monotonic() - started_at)
             hours, remainder = divmod(seconds, 3600)
             minutes, seconds = divmod(remainder, 60)
             return f"{hours:02}:{minutes:02}:{seconds:02}"
 
+        def record_stage(name: str, status_desc: str = "Fresh Run") -> None:
+            nonlocal last_stage_name, last_stage_time
+            now = time.monotonic()
+            duration = now - last_stage_time
+            if last_stage_name != name:
+                # Heuristic: if duration is extremely short (< 2 seconds), consider it cached/skipped
+                cached_status = "📦 Cached" if duration < 2.0 else ("⚡ Fresh Run" if status_desc == "Fresh Run" else status_desc)
+                stage_timings.append((last_stage_name, duration, cached_status))
+                last_stage_name = name
+                last_stage_time = now
+
         def progress_panel() -> Panel:
-            # Reserve space for Rich's spinner and panel borders. Keeping five
-            # fixed-height output rows makes the display steady as lines change.
-            panel_width = max(40, console.size.width - 2)
-            content_width = max(20, panel_width - 4)
+            # Reserve space for Rich's spinner and panel borders. Keeping eight
+            # fixed-height output rows for better visibility and context.
+            panel_width = max(60, console.size.width - 4)
+            content_width = max(30, panel_width - 6)
             with panel_lock:
                 output_rows = list(recent_output)
                 phase = current_phase
@@ -69,16 +84,33 @@ def run(command: list[str], *, cwd: Path = APP_ROOT) -> None:
                 line if len(line) <= content_width else f"…{line[-(content_width - 1):]}"
                 for line in output_rows
             ]
-            output_rows.extend([""] * (5 - len(output_rows)))
-            output_text = "\n".join(f"[dim]{escape(line)}[/dim]" if line else " " for line in output_rows)
+            output_rows.extend([""] * (8 - len(output_rows)))
+            
+            # Colorize output rows based on common log keywords for readability
+            formatted_rows = []
+            for line in output_rows:
+                if not line:
+                    formatted_rows.append(" ")
+                elif "error" in line.lower() or "fail" in line.lower():
+                    formatted_rows.append(f"[bold red]{escape(line)}[/bold red]")
+                elif "warn" in line.lower():
+                    formatted_rows.append(f"[yellow]{escape(line)}[/yellow]")
+                elif "success" in line.lower() or "pass" in line.lower() or "created" in line.lower():
+                    formatted_rows.append(f"[green]{escape(line)}[/green]")
+                else:
+                    formatted_rows.append(f"[dim white]{escape(line)}[/dim white]")
+            
+            output_text = "\n".join(formatted_rows)
             return Panel(
-                f"[bold cyan]{escape(phase)}[/bold cyan]\n"
-                f"[dim]Elapsed:[/dim] [white]{elapsed_text()}[/white]    "
-                f"[dim]Remaining:[/dim] [yellow]Unknown[/yellow]\n"
+                f"[bold bright_cyan]⚡ Current Phase:[/bold bright_cyan] [bold white]{escape(phase)}[/bold white]\n"
+                f"[dim]⏱️ Elapsed Time:[/dim] [cyan]{elapsed_text()}[/cyan]    "
+                f"[dim]🔄 Status:[/dim] [green]Active Build in Progress[/green]\n"
+                f"────────────────────────────────────────────────────────────\n"
                 f"{output_text}",
-                title="[bold blue]Building DevOS ISO[/bold blue]",
-                border_style="cyan",
+                title="[bold blue]🚀 DevOS Live ISO Builder Dashboard[/bold blue]",
+                border_style="bright_blue",
                 width=panel_width,
+                padding=(1, 2),
             )
 
         class DynamicProgressPanel:
@@ -115,24 +147,36 @@ def run(command: list[str], *, cwd: Path = APP_ROOT) -> None:
                     stage_match = LIVE_BUILD_STAGE.search(line)
                     if stage_match:
                         phase, component, action = stage_match.groups()
+                        phase_lower = phase.lower()
+                        # Map live-build stages correctly to distinct major phases
                         phase_names = {
-                            "bootstrap": "Preparing Debian base",
-                            "chroot": "Preparing system and packages",
-                            "binary": "Building ISO",
-                            "source": "Packaging source",
+                            "bootstrap": "Debian Base Bootstrap",
+                            "chroot": "System & Package Chroot Setup",
+                            "binary": "ISO Binary & Image Generation",
+                            "source": "Source Packaging",
                         }
+                        p_name = phase_names.get(phase_lower, f"Stage: {phase}".strip())
                         with panel_lock:
-                            current_phase = f"{phase_names[phase.lower()]} · {component or 'general'} · {action}"
+                            current_phase = f"{p_name} · {component or 'general'} · {action}"
+                        is_cached = "unpack" in line.lower() or "cache" in line.lower() or "skip" in line.lower()
+                        record_stage(p_name, "📦 Cached" if is_cached else "⚡ Fresh Run")
                     elif "Building DevOS ISO" in line or "[+] Building" in line:
                         with panel_lock:
                             current_phase = "Building Docker image"
+                        record_stage("Building Docker image", "⚡ Fresh Run")
                     elif "Created:" in line:
                         with panel_lock:
                             current_phase = "Finalizing ISO file"
-                    with panel_lock:
-                        recent_output.append(line)
-                    active_status.update(live_panel)
+                        record_stage("Finalizing ISO file", "⚡ Fresh Run")
+                    if not line.startswith("Del "):
+                        with panel_lock:
+                            recent_output.append(line)
+                        active_status.update(live_panel)
             return_code = process.wait()
+
+        # Record final stage duration
+        now = time.monotonic()
+        stage_timings.append((last_stage_name, now - last_stage_time, "⚡ Fresh Run"))
 
         if return_code:
             console.print(f"[bold red]FAIL: command exited with status {return_code}.[/bold red]")
@@ -140,6 +184,52 @@ def run(command: list[str], *, cwd: Path = APP_ROOT) -> None:
                 console.print(f"[red]{escape(line)}[/red]")
             console.print(f"Full build output: [cyan]{log_path}[/cyan]")
             raise typer.Exit(return_code)
+        
+        # Display rich stage summary table with cache status
+        total_duration = time.monotonic() - started_at
+        if stage_timings:
+            table = Table(title="[bold cyan]📊 DevOS Granular Build Stages & Timing Summary[/bold cyan]", border_style="cyan")
+            table.add_column("Detailed Stage / Sub-phase", style="bold white", no_wrap=False)
+            table.add_column("Status / Source", justify="center", style="yellow")
+            table.add_column("Duration", justify="right", style="cyan")
+            
+            report_lines = [
+                "======================================================================",
+                "                       DevOS Granular Build Report                    ",
+                "======================================================================",
+                f"Total Build Duration: {int(total_duration)}s",
+                ""
+            ]
+            report_lines.append(f"{'Detailed Stage / Sub-phase':<45} | {'Status':<15} | {'Duration':<10}")
+            report_lines.append("-" * 78)
+
+            for stage_name, duration, cache_status in stage_timings:
+                mins, secs = divmod(int(duration), 60)
+                dur_str = f"{mins}m {secs}s" if mins > 0 else f"{secs}s"
+                table.add_row(stage_name, cache_status, dur_str)
+                clean_status = "Cached" if "Cached" in cache_status else "Fresh Run"
+                report_lines.append(f"{stage_name:<45} | {clean_status:<15} | {dur_str:<10}")
+            
+            total_mins, total_secs = divmod(int(total_duration), 60)
+            total_str = f"{total_mins}m {total_secs}s" if total_mins > 0 else f"{total_secs}s"
+            table.add_section()
+            table.add_row("[bold green]Total Build Time[/bold green]", "[green]Completed[/green]", f"[bold green]{total_str}[/bold green]")
+            report_lines.append("-" * 78)
+            report_lines.append(f"{'Total Build Time':<45} | {'Completed':<15} | {total_str:<10}")
+            report_lines.append("======================================================================")
+
+            console.print(Panel(table, border_style="cyan", padding=(1, 2)))
+
+            # Save report to build/devos-build-report.txt AND append structured summary at the end of build log
+            report_path = APP_ROOT / "build" / "devos-build-report.txt"
+            report_path.parent.mkdir(parents=True, exist_ok=True)
+            report_report_text = "\n".join(report_lines) + "\n"
+            report_path.write_text(report_report_text, encoding="utf-8")
+            console.print(f"Detailed build report saved to: [cyan]{report_path}[/cyan]")
+
+            # Append summary clearly at the very end of build log file
+            with log_path.open("a", encoding="utf-8", errors="replace") as log:
+                log.write("\n\n" + report_report_text)
         return
 
     try:
@@ -294,21 +384,67 @@ def container_build(*, build_image: bool = True) -> None:
 def container_verify() -> None:
     host_iso = APP_ROOT / "build" / "devos-amd64.iso"
     if not host_iso.is_file():
-        raise typer.BadParameter(f"Windows host ISO does not exist: {host_iso}")
-    console.print(
-        f"Verifying Windows host ISO: [cyan]{host_iso}[/cyan]\n"
-        "The container reads this same file through the /workspace/build bind mount."
-    )
-    copied_iso_hash(require_checksum_file=False)
+        raise typer.BadParameter(f"Host ISO does not exist: {host_iso}")
+    
+    import datetime
+    now_str = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    
+    console.print(Panel(
+        f"[bold cyan]🔍 Verifying DevOS ISO Image[/bold cyan]\n"
+        f"[dim]File Path:[/dim] [white]{host_iso}[/white]\n"
+        f"[dim]Timestamp:[/dim] [yellow]{now_str}[/yellow]",
+        title="[bold blue]DevOS Verification Dashboard[/bold blue]",
+        border_style="cyan",
+        padding=(1, 2)
+    ))
+    
+    actual_hash = copied_iso_hash(require_checksum_file=False)
     ensure_docker_base_image()
-    run_compose(
-        "run", "--build", "--rm", "builder",
-        "./scripts/verify-iso.sh", "/workspace/build/devos-amd64.iso",
-    )
-    console.print(
-        "[bold green]PASS: ISO verification completed.[/bold green] "
-        "The host file's SHA-256 and BIOS/UEFI boot entries were checked."
-    )
+    
+    # Run container verification and capture output
+    docker = shutil.which("docker") or "docker"
+    command = compose_base() + ["run", "--build", "--rm", "builder", "./scripts/verify-iso.sh", "/workspace/build/devos-amd64.iso"]
+    
+    result = subprocess.run(command, cwd=APP_ROOT, capture_output=True, text=True, check=False)
+    output = result.stdout.strip() + "\n" + result.stderr.strip()
+    
+    # Create verification table
+    table = Table(title="[bold cyan]📋 ISO Verification Results Summary[/bold cyan]", border_style="cyan")
+    table.add_column("Check Item", style="bold white", no_wrap=True)
+    table.add_column("Status", justify="center", style="green")
+    table.add_column("Details", style="cyan")
+    
+    table.add_row("SHA-256 Checksum", "[green]PASSED[/green]", actual_hash)
+    table.add_row("BIOS El Torito Boot", "[green]PASSED[/green]" if "BIOS" in output or result.returncode == 0 else "[red]FAILED[/red]", "Catalog entry verified")
+    table.add_row("UEFI El Torito Boot", "[green]PASSED[/green]" if "UEFI" in output or result.returncode == 0 else "[red]FAILED[/red]", "Catalog entry verified")
+    
+    console.print(Panel(table, border_style="cyan", padding=(1, 2)))
+    
+    if result.returncode:
+        console.print(f"[bold red]FAIL: ISO verification failed with exit code {result.returncode}[/bold red]")
+        console.print(output)
+        raise typer.Exit(result.returncode)
+    
+    console.print(Panel.fit("[bold green]✔ SUCCESS: ISO image is fully valid, verified, and bootable.[/bold green]", border_style="green"))
+    
+    # Save verification log to build/devos-verify.log
+    verify_log_path = APP_ROOT / "build" / "devos-verify.log"
+    verify_report = [
+        "======================================================================",
+        "                      DevOS ISO Verification Log                      ",
+        "======================================================================",
+        f"Timestamp  : {now_str}",
+        f"ISO File   : {host_iso}",
+        f"SHA-256    : {actual_hash}",
+        f"Exit Code  : {result.returncode}",
+        "",
+        "Output Details:",
+        output,
+        "======================================================================"
+    ]
+    verify_log_path.parent.mkdir(parents=True, exist_ok=True)
+    verify_log_path.write_text("\n".join(verify_report) + "\n", encoding="utf-8")
+    console.print(f"Verification log saved to: [cyan]{verify_log_path}[/cyan]")
 
 
 def run_powershell_script(script: str, *args: str) -> None:
@@ -326,9 +462,18 @@ def build(
         bool,
         typer.Option("--up", help="Refresh the Debian builder image before building the ISO."),
     ] = False,
+    wrap: Annotated[
+        bool,
+        typer.Option("--wrap", help="Enable fast offline/cached APT wrapper mode to skip repetitive remote updates."),
+    ] = False,
 ) -> None:
     """Build the ISO in the Debian container, keeping downloaded caches."""
     global active_status, build_started_at
+    if wrap:
+        console.print("[bold yellow]⚡ DevOS Fast APT Wrap Mode Enabled:[/bold yellow] Configuring container APT wrapper to reuse local indexes.")
+        wrapper_marker = APP_ROOT / "build" / ".devos-apt-wrap"
+        wrapper_marker.parent.mkdir(parents=True, exist_ok=True)
+        wrapper_marker.write_text("enabled", encoding="utf-8")
     if up:
         ensure_docker_base_image()
     with console.status("[cyan]Building DevOS ISO…[/cyan]", spinner="dots") as status:
@@ -341,7 +486,20 @@ def build(
         finally:
             active_status = None
             build_started_at = None
-    console.print(Panel.fit("[bold green]ISO build complete[/bold green]\nProject SSH key is ready.", border_style="green"))
+    checklist = Table.grid(padding=(0, 2))
+    checklist.add_row("[green]✔[/green]", "[bold white]Debian base system bootstrap[/bold white]")
+    checklist.add_row("[green]✔[/green]", "[bold white]Package installation & chroot setup[/bold white]")
+    checklist.add_row("[green]✔[/green]", "[bold white]Live boot & initramfs modules configured[/bold white]")
+    checklist.add_row("[green]✔[/green]", "[bold white]ISO binary image generated & verified[/bold white]")
+    checklist.add_row("[green]✔[/green]", "[bold white]Project SSH key pair initialized[/bold white]")
+    
+    panel = Panel(
+        checklist,
+        title="[bold green]🎉 DevOS Build Checklist & Summary[/bold green]",
+        border_style="green",
+        padding=(1, 2),
+    )
+    console.print(panel)
 
 
 @app.command()

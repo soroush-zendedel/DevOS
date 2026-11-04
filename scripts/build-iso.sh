@@ -20,16 +20,17 @@ configure_build() {
     rm -f config/package-lists/live.list.chroot
     # Live-build adds default hook symlinks here; a failed or repeated config
     # must not leave them behind for the next mirror attempt.
-    if [ -d config/hooks ]; then
-        find config/hooks -type l -delete
+    if [ -d config/hooks/normal ]; then
+        find config/hooks/normal -type l -delete
     fi
     # Some Docker Desktop/Windows bind-mount combinations materialize those
     # generated links as ordinary files, so remove the known Live Build hook
-    # destinations as well. Keep project hooks, which use their own names.
+    # destinations safely without throwing errors if they don't exist.
     if [ -d /usr/share/live/build/hooks/normal ]; then
         for default_hook in /usr/share/live/build/hooks/normal/*; do
             [ -e "$default_hook" ] || continue
-            rm -f -- "config/hooks/normal/$(basename "$default_hook")"
+            target="config/hooks/normal/$(basename "$default_hook")"
+            [ -e "$target" ] || [ -L "$target" ] && rm -f -- "$target"
         done
     fi
     lb config
@@ -42,7 +43,7 @@ for pair in $(printf '%s' "$mirror_pairs" | tr ',' '\n'); do
     export DEVOS_DEBIAN_MIRROR=${pair%%|*}
     export DEVOS_SECURITY_MIRROR=${pair#*|}
     echo "Building with Debian mirrors: $DEVOS_DEBIAN_MIRROR and $DEVOS_SECURITY_MIRROR"
-    lb clean --all
+    lb clean
     configure_build
     if lb build; then
         success=1

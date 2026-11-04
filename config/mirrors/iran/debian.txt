@@ -1,5 +1,9 @@
 # Format: Debian archive URL|Debian security URL. Tried in order.
-http://mirror.arvancloud.ir/debian/|http://mirror.arvancloud.ir/debian-security/
-http://mirror.iranserver.com/debian/|http://mirror.iranserver.com/debian-security/
+# Tsinghua University Mirror (Reliable global mirror without sync lag issues) first, followed by stable Iranian mirrors.
+https://mirrors.tuna.tsinghua.edu.cn/debian/|https://mirrors.tuna.tsinghua.edu.cn/debian-security/
 http://mirror.famaserver.com/debian/|http://mirror.iranserver.com/debian-security/
+http://mirror.iranserver.com/debian/|http://mirror.iranserver.com/debian-security/
+http://mirror.arvancloud.ir/debian/|http://mirror.arvancloud.ir/debian-security/
+http://repo.iust.ac.ir/debian/|http://repo.iust.ac.ir/debian-security/
+http://ftp.ut.ac.ir/debian/|http://ftp.ut.ac.ir/debian-security/
 http://deb.debian.org/debian/|http://security.debian.org/debian-security/
