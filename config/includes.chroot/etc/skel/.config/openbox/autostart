@@ -1,3 +1,4 @@
 #!/bin/sh
-
-kitty --start-as=fullscreen &
+# DevOS Openbox autostart
+# Automatically spawn the default terminal emulator fullscreen on session start.
+kitty &

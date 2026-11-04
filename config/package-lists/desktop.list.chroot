@@ -4,4 +4,5 @@ x11-xserver-utils
 xinit
 xorg
 xserver-xorg-input-libinput
+xserver-xorg-input-all
 fonts-dejavu-core

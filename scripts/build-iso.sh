@@ -61,5 +61,6 @@ if [ ! -f "$1" ]; then
     echo "Build completed but no ISO was found." >&2
     exit 1
 fi
+rm -f build/devos-amd64.iso
 mv -- "$1" build/devos-amd64.iso
 echo "Created: $ROOT/build/devos-amd64.iso"
